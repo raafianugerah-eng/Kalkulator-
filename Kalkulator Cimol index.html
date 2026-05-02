@@ -1,0 +1,370 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+   <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CIMOL MASTER PRO - AUTO SAVE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; -webkit-tap-highlight-color: transparent; }
+        .card-shadow { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05); }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .active-scale:active { transform: scale(0.96); transition: 0.1s; }
+    </style>
+</head>
+<body class="pb-10">
+
+    <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold shadow-2xl transition-all transform -translate-y-20 opacity-0 z-[100] text-sm pointer-events-none">
+        Data Tersimpan Otomatis!
+    </div>
+
+    <nav class="bg-slate-900 text-white p-6 sticky top-0 z-50 rounded-b-[2.5rem] shadow-2xl">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-extrabold tracking-tighter text-amber-500 uppercase">Cimol Master <span class="text-white font-light text-sm ml-2">Pro</span></h1>
+                <p id="current-date-header" class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Sistem Auto-Save Aktif</p>
+            </div>
+            <button onclick="confirmReset()" class="bg-red-500/10 text-red-500 border border-red-500/30 px-5 py-2.5 rounded-2xl text-[10px] font-black active-scale uppercase">Reset Data</button>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 mt-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- DASHBOARD & STOK -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <!-- GAJI DASHBOARD -->
+                <div class="bg-indigo-600 p-8 rounded-[3rem] text-white card-shadow relative overflow-hidden">
+                    <p class="text-indigo-200 text-[10px] font-bold uppercase mb-2 tracking-[0.2em]">Pendapatan Bersih Hari Ini</p>
+                    <h2 id="widget-profit-bersih" class="text-5xl font-black mb-8 tracking-tighter">Rp 0</h2>
+                    
+                    <div class="bg-white/10 backdrop-blur-md rounded-[2.5rem] p-6 border border-white/10 mb-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-[10px] font-black uppercase text-indigo-200 tracking-widest">Gaji Harian (Cash Out)</span>
+                            <span id="gaji-status-badge" class="bg-amber-500 text-[8px] font-black px-2 py-1 rounded-lg">LOADING...</span>
+                        </div>
+                        <div class="flex items-end gap-2">
+                            <h3 id="widget-gaji-harian" class="text-4xl font-black text-amber-400 leading-none">Rp 0</h3>
+                            <span id="bonus-badge" class="hidden bg-emerald-500 text-[9px] font-black p-1 px-2 rounded-full mb-1">+500K Bonus</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-white/5 p-4 rounded-[1.5rem] border border-white/5 text-center">
+                            <p class="text-indigo-200 text-[9px] font-bold uppercase mb-1">Setoran Tunai</p>
+                            <h2 id="widget-setoran-tunai" class="text-lg font-black truncate text-white">Rp 0</h2>
+                        </div>
+                        <div class="bg-white/5 p-4 rounded-[1.5rem] border border-white/5 text-center">
+                            <p class="text-indigo-200 text-[9px] font-bold uppercase mb-1">Saldo QRIS</p>
+                            <h2 id="widget-saldo-qris" class="text-lg font-black truncate text-white">Rp 0</h2>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STOK GLOBAL (POIN) -->
+                <div class="bg-white p-8 rounded-[3rem] border border-slate-200 card-shadow">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <p class="text-slate-400 text-xs font-bold uppercase mb-1 tracking-wider">Sisa Poin Global</p>
+                            <h2 id="widget-sisa-stok-poin" class="text-6xl font-black text-slate-900 tracking-tighter">0</h2>
+                        </div>
+                        <span id="stok-poin-persen" class="bg-amber-100 text-amber-600 px-4 py-2 rounded-2xl text-sm font-black">0%</span>
+                    </div>
+                    
+                    <div class="w-full bg-slate-100 h-4 rounded-full overflow-hidden mb-8">
+                        <div id="stok-poin-progress" class="bg-amber-500 h-full w-0 transition-all"></div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="space-y-2">
+                            <label class="text-[9px] font-black text-slate-400 uppercase block text-center">Stok Awal</label>
+                            <input type="number" id="stok-poin-awal" oninput="updateAll()" class="w-full bg-slate-50 border border-slate-200 text-center font-black rounded-2xl p-4 text-xl outline-none" value="0">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[9px] font-black text-slate-400 uppercase block text-center">Poin Masuk</label>
+                            <input type="number" id="stok-poin-masuk" oninput="updateAll()" class="w-full bg-slate-50 border border-slate-200 text-center font-black rounded-2xl p-4 text-xl outline-none" value="0">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[9px] font-black text-slate-400 uppercase block text-center">Retur</label>
+                            <input type="number" id="stok-poin-retur" oninput="updateAll()" class="w-full bg-slate-50 border border-slate-200 text-center font-black rounded-2xl p-4 text-xl outline-none" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STOK FISIK PER VARIAN -->
+                <div class="bg-white p-8 rounded-[3rem] border border-slate-200 card-shadow">
+                    <div class="bg-indigo-50 border border-indigo-100 p-6 rounded-[2.5rem] mb-6">
+                        <p class="text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-1">Total Sisa Fisik (Semua Varian)</p>
+                        <h2 id="widget-total-fisik" class="text-4xl font-black text-indigo-700">0 <span class="text-lg font-bold">Porsi</span></h2>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-50 p-4 rounded-[2rem] border border-slate-100">
+                            <p class="text-[9px] font-black text-slate-400 uppercase mb-2">Bojot (Sisa: <b id="sisa-fisik-boj">0</b>)</p>
+                            <input type="number" id="stok-fisik-boj" oninput="updateAll()" class="w-full bg-white border border-slate-200 text-center font-black rounded-xl p-3 text-lg outline-none" value="0">
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-[2rem] border border-slate-100">
+                            <p class="text-[9px] font-black text-slate-400 uppercase mb-2">Moza (Sisa: <b id="sisa-fisik-mza">0</b>)</p>
+                            <input type="number" id="stok-fisik-mza" oninput="updateAll()" class="w-full bg-white border border-slate-200 text-center font-black rounded-xl p-3 text-lg outline-none" value="0">
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-[2rem] border border-slate-100">
+                            <p class="text-[9px] font-black text-slate-400 uppercase mb-2">Ayam (Sisa: <b id="sisa-fisik-aym">0</b>)</p>
+                            <input type="number" id="stok-fisik-aym" oninput="updateAll()" class="w-full bg-white border border-slate-200 text-center font-black rounded-xl p-3 text-lg outline-none" value="0">
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-[2rem] border border-slate-100">
+                            <p class="text-[9px] font-black text-slate-400 uppercase mb-2">Beef (Sisa: <b id="sisa-fisik-bef">0</b>)</p>
+                            <input type="number" id="stok-fisik-bef" oninput="updateAll()" class="w-full bg-white border border-slate-200 text-center font-black rounded-xl p-3 text-lg outline-none" value="0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KANAN: MENU & KASIR -->
+            <div class="lg:col-span-7 space-y-6">
+                
+                <div class="bg-slate-200/40 p-2 rounded-[3.5rem] border border-slate-200">
+                    <div id="product-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 max-h-[85vh] lg:max-h-none overflow-y-auto">
+                    </div>
+                </div>
+
+                <!-- BIAYA & KALKULATOR -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-8 rounded-[3rem] border border-slate-200 card-shadow">
+                        <h3 class="font-black text-red-500 mb-4 text-[10px] uppercase tracking-widest">Biaya Pengeluaran</h3>
+                        <div class="flex gap-2 mb-4">
+                            <input type="text" id="exp-note" placeholder="Ket..." class="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-xs font-bold outline-none">
+                            <input type="number" id="exp-val" placeholder="Rp" class="w-20 bg-slate-50 border border-slate-200 p-3 rounded-xl text-xs font-black text-center outline-none">
+                            <button onclick="addExpense()" class="bg-slate-900 text-white px-4 rounded-xl active-scale">+</button>
+                        </div>
+                        <div id="expense-list" class="space-y-2 max-h-[100px] overflow-y-auto"></div>
+                    </div>
+
+                    <div class="bg-slate-900 p-8 rounded-[3rem] text-white card-shadow">
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <input type="number" id="calc-bayar" placeholder="Bayar" class="w-full bg-slate-800 border-none p-3 rounded-xl font-black text-amber-500 text-center outline-none" oninput="calculateChange()">
+                            <input type="number" id="calc-total" placeholder="Harga" class="w-full bg-slate-800 border-none p-3 rounded-xl font-black text-white text-center outline-none" oninput="calculateChange()">
+                        </div>
+                        <div class="bg-black/50 p-4 rounded-2xl text-center">
+                            <h4 id="calc-result" class="text-2xl font-black text-amber-500">Kembalian: Rp 0</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <button onclick="copyToWA()" class="flex-1 bg-emerald-600 text-white font-black p-6 rounded-[2.5rem] text-xs uppercase shadow-xl active-scale">Kirim Laporan WA</button>
+                    <button onclick="downloadReport()" class="flex-1 bg-white border-2 border-slate-200 text-slate-900 font-black p-6 rounded-[2.5rem] text-xs uppercase active-scale">Download File</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL RESET -->
+    <div id="modal-reset" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] hidden items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[3rem] p-10 text-center shadow-2xl">
+            <h3 class="text-2xl font-black mb-2 text-slate-900">Reset Semua Data?</h3>
+            <p class="text-xs text-slate-500 mb-8 font-medium">Laporan hari ini akan dihapus permanen.</p>
+            <div class="flex gap-3">
+                <button onclick="executeReset()" class="flex-1 bg-red-600 text-white font-black p-5 rounded-[1.5rem] text-sm active-scale">YA, RESET</button>
+                <button onclick="closeConfirm()" class="flex-1 bg-slate-100 text-slate-500 font-black p-5 rounded-[1.5rem] text-sm active-scale">BATAL</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const products = [
+            { id: 'boj-kcl', name: 'Cimol Bojot Kecil', price: 6000, pts: 1, cats: ['boj'], cat: 'Single' },
+            { id: 'boj-bsr', name: 'Cimol Bojot Besar', price: 12000, pts: 2, cats: ['boj', 'boj'], cat: 'Single' },
+            { id: 'mza-kcl', name: 'Cimol Moza Kecil', price: 11000, pts: 1, cats: ['mza'], cat: 'Single' },
+            { id: 'mza-bsr', name: 'Cimol Moza Besar', price: 22000, pts: 2, cats: ['mza', 'mza'], cat: 'Single' },
+            { id: 'aym-kcl', name: 'Cimol Ayam Kecil', price: 11000, pts: 1, cats: ['aym'], cat: 'Single' },
+            { id: 'aym-bsr', name: 'Cimol Ayam Besar', price: 22000, pts: 2, cats: ['aym', 'aym'], cat: 'Single' },
+            { id: 'bef-kcl', name: 'Cimol Beef Kecil', price: 11000, pts: 1, cats: ['bef'], cat: 'Single' },
+            { id: 'bef-bsr', name: 'Cimol Beef Besar', price: 22000, pts: 2, cats: ['bef', 'bef'], cat: 'Single' },
+            { id: 'mix-bm', name: 'Mix Bojot Moza', price: 17000, pts: 2, cats: ['boj', 'mza'], cat: 'Mix' },
+            { id: 'mix-ba', name: 'Mix Bojot Ayam', price: 17000, pts: 2, cats: ['boj', 'aym'], cat: 'Mix' },
+            { id: 'mix-bb', name: 'Mix Bojot Beef', price: 17000, pts: 2, cats: ['boj', 'bef'], cat: 'Mix' },
+            { id: 'mix-ma', name: 'Mix Moza Ayam', price: 22000, pts: 2, cats: ['mza', 'aym'], cat: 'Mix' },
+            { id: 'mix-mb', name: 'Mix Moza Beef', price: 22000, pts: 2, cats: ['mza', 'bef'], cat: 'Mix' },
+            { id: 'mix-ab', name: 'Mix Ayam Beef', price: 22000, pts: 2, cats: ['aym', 'bef'], cat: 'Mix' }
+        ];
+
+        let sales = {};
+        let expenses = [];
+        let isBonusDay = new Date().getDate() === 7;
+
+        function initData() { products.forEach(p => sales[p.id] = { tunai: 0, qris: 0 }); }
+        function fmtRp(v) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v); }
+        
+        function saveData() {
+            const data = {
+                sales,
+                expenses,
+                stokPoin: {
+                    awal: document.getElementById('stok-poin-awal').value,
+                    masuk: document.getElementById('stok-poin-masuk').value,
+                    retur: document.getElementById('stok-poin-retur').value
+                },
+                stokFisik: {
+                    boj: document.getElementById('stok-fisik-boj').value,
+                    mza: document.getElementById('stok-fisik-mza').value,
+                    aym: document.getElementById('stok-fisik-aym').value,
+                    bef: document.getElementById('stok-fisik-bef').value
+                }
+            };
+            localStorage.setItem('cimol_master_pro_autosave', JSON.stringify(data));
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('cimol_master_pro_autosave');
+            if (saved) {
+                const d = JSON.parse(saved);
+                sales = d.sales || sales;
+                expenses = d.expenses || [];
+                if(d.stokPoin) {
+                    document.getElementById('stok-poin-awal').value = d.stokPoin.awal || 0;
+                    document.getElementById('stok-poin-masuk').value = d.stokPoin.masuk || 0;
+                    document.getElementById('stok-poin-retur').value = d.stokPoin.retur || 0;
+                }
+                if(d.stokFisik) {
+                    document.getElementById('stok-fisik-boj').value = d.stokFisik.boj || 0;
+                    document.getElementById('stok-fisik-mza').value = d.stokFisik.mza || 0;
+                    document.getElementById('stok-fisik-aym').value = d.stokFisik.aym || 0;
+                    document.getElementById('stok-fisik-bef').value = d.stokFisik.bef || 0;
+                }
+            }
+        }
+
+        function updateAll() {
+            let tT = 0, tQ = 0, tB = 0, tpDipakai = 0;
+            let tfDipakai = { boj: 0, mza: 0, aym: 0, bef: 0 };
+
+            products.forEach(p => {
+                let qty = (sales[p.id]?.tunai || 0) + (sales[p.id]?.qris || 0);
+                tT += (sales[p.id]?.tunai || 0) * p.price;
+                tQ += (sales[p.id]?.qris || 0) * p.price;
+                tpDipakai += (qty * p.pts);
+                p.cats.forEach(c => tfDipakai[c] += qty);
+            });
+            expenses.forEach(e => tB += e.val);
+
+            const totalOmset = tT + tQ;
+            let gaji = (totalOmset < 800000) ? 100000 : totalOmset * 0.125;
+            if (isBonusDay) gaji += 500000;
+
+            // UI Updates
+            document.getElementById('widget-gaji-harian').innerText = fmtRp(gaji);
+            document.getElementById('gaji-status-badge').innerText = totalOmset < 800000 ? "SUBSIDI < 800K" : "BAGI HASIL 12.5%";
+            document.getElementById('widget-profit-bersih').innerText = fmtRp(totalOmset - tB);
+            document.getElementById('widget-setoran-tunai').innerText = fmtRp(tT - tB - gaji);
+            document.getElementById('widget-saldo-qris').innerText = fmtRp(tQ);
+            if(isBonusDay) document.getElementById('bonus-badge').classList.remove('hidden');
+
+            // Stok Poin Global
+            const pAwal = parseInt(document.getElementById('stok-poin-awal').value || 0);
+            const pMasuk = parseInt(document.getElementById('stok-poin-masuk').value || 0);
+            const pRetur = parseInt(document.getElementById('stok-poin-retur').value || 0);
+            const sisaPoin = (pAwal + pMasuk) - tpDipakai - pRetur;
+            document.getElementById('widget-sisa-stok-poin').innerText = sisaPoin;
+            const pPerc = (pAwal + pMasuk) > 0 ? (sisaPoin / (pAwal + pMasuk)) * 100 : 0;
+            document.getElementById('stok-poin-persen').innerText = Math.round(pPerc) + "%";
+            document.getElementById('stok-poin-progress').style.width = Math.max(0, Math.min(100, pPerc)) + "%";
+
+            // Stok Fisik
+            let totalF = 0;
+            ['boj','mza','aym','bef'].forEach(k => {
+                const s = parseInt(document.getElementById(`stok-fisik-${k}`).value || 0) - tfDipakai[k];
+                document.getElementById(`sisa-fisik-${k}`).innerText = s;
+                totalF += s;
+            });
+            document.getElementById('widget-total-fisik').innerText = totalF;
+
+            saveData();
+        }
+
+        function renderProducts() {
+            const cont = document.getElementById('product-container'); cont.innerHTML = '';
+            ['Single', 'Mix'].forEach(cat => {
+                cont.innerHTML += `<div class="col-span-full mt-4 mb-2"><h4 class="text-[10px] font-black text-slate-400 uppercase px-4">${cat} Menu</h4></div>`;
+                products.filter(p => p.cat === cat).forEach(p => {
+                    cont.innerHTML += `
+                    <div class="bg-white p-5 rounded-[2.5rem] border border-slate-200 card-shadow">
+                        <h4 class="font-black text-slate-800 text-sm mb-1">${p.name}</h4>
+                        <p class="text-[9px] font-bold text-slate-400 mb-4">${fmtRp(p.price)} • ${p.pts} Poin</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="bg-slate-50 p-2 rounded-2xl flex flex-col items-center">
+                                <span class="text-[8px] font-bold text-slate-400 uppercase mb-1">Tunai</span>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="mod('${p.id}','tunai',-1)" class="w-7 h-7 bg-white border rounded-lg font-bold">-</button>
+                                    <span class="text-xs font-black" id="qty-${p.id}-tunai">${sales[p.id].tunai}</span>
+                                    <button onclick="mod('${p.id}','tunai',1)" class="w-7 h-7 bg-slate-900 text-white rounded-lg font-bold">+</button>
+                                </div>
+                            </div>
+                            <div class="bg-slate-50 p-2 rounded-2xl flex flex-col items-center">
+                                <span class="text-[8px] font-bold text-slate-400 uppercase mb-1">QRIS</span>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="mod('${p.id}','qris',-1)" class="w-7 h-7 bg-white border rounded-lg font-bold">-</button>
+                                    <span class="text-xs font-black" id="qty-${p.id}-qris">${sales[p.id].qris}</span>
+                                    <button onclick="mod('${p.id}','qris',1)" class="w-7 h-7 bg-indigo-600 text-white rounded-lg font-bold">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+            });
+        }
+
+        function mod(id, type, n) { 
+            if(sales[id][type] + n < 0) return; 
+            sales[id][type] += n; 
+            document.getElementById(`qty-${id}-${type}`).innerText = sales[id][type]; 
+            if(n > 0) { document.getElementById('calc-total').value = products.find(x => x.id === id).price; calculateChange(); } 
+            updateAll(); 
+        }
+
+        function addExpense() { 
+            const n = document.getElementById('exp-note').value, v = parseInt(document.getElementById('exp-val').value || 0); 
+            if(!n || v <= 0) return; 
+            expenses.push({ note: n, val: v, id: Date.now() }); 
+            document.getElementById('exp-note').value = ''; document.getElementById('exp-val').value = ''; 
+            renderExpenses(); updateAll(); 
+        }
+
+        function renderExpenses() { 
+            const l = document.getElementById('expense-list'); l.innerHTML = ''; 
+            expenses.forEach(e => { 
+                l.innerHTML += `<div class="flex justify-between bg-red-50 p-3 rounded-xl mb-1"><span class="text-[10px] font-bold text-slate-700">${e.note} (${fmtRp(e.val)})</span><button onclick="delExp(${e.id})" class="text-red-500 font-black">X</button></div>`; 
+            }); 
+        }
+
+        function delExp(id) { expenses = expenses.filter(x => x.id !== id); renderExpenses(); updateAll(); }
+        function calculateChange() { 
+            const b = parseInt(document.getElementById('calc-bayar').value || 0), t = parseInt(document.getElementById('calc-total').value || 0); 
+            document.getElementById('calc-result').innerText = `Kembalian: ${fmtRp(b - t)}`; 
+        }
+
+        function confirmReset() { document.getElementById('modal-reset').classList.remove('hidden'); document.getElementById('modal-reset').classList.add('flex'); }
+        function closeConfirm() { document.getElementById('modal-reset').classList.add('hidden'); }
+        function executeReset() { localStorage.removeItem('cimol_master_pro_autosave'); location.reload(); }
+
+        function copyToWA() { 
+            let r = `*LAPORAN HARIAN CIMOL*\n\n`;
+            r += `Sisa Poin: ${document.getElementById('widget-sisa-stok-poin').innerText}\n`;
+            r += `Sisa Fisik: ${document.getElementById('widget-total-fisik').innerText}\n`;
+            r += `Gaji Hari Ini: ${document.getElementById('widget-gaji-harian').innerText}\n`;
+            r += `Setoran Tunai: ${document.getElementById('widget-setoran-tunai').innerText}\n`;
+            r += `Saldo QRIS: ${document.getElementById('widget-saldo-qris').innerText}\n`;
+            const el = document.createElement('textarea'); el.value = r; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); 
+            const t = document.getElementById('toast'); t.innerText = "Laporan Disalin!"; t.classList.remove('-translate-y-20', 'opacity-0'); setTimeout(() => t.classList.add('-translate-y-20', 'opacity-0'), 2000);
+        }
+
+        window.onload = () => { 
+            const d = new Date();
+            document.getElementById('current-date-header').innerText = d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+            initData(); loadData(); renderProducts(); renderExpenses(); updateAll(); 
+        };
+    </script>
+</body>
+</html>
